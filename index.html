@@ -401,6 +401,7 @@
                         ]);
                     }
                     map.setFilter("nbhd_hover_light", ["!=", "small_neighborhood", features[0].properties.small_neighborhood]);
+                    map.setFilter("nbhd_hover", ["==", "small_neighborhood", ""]);
                     currentNeighborhood = features[0].properties.small_neighborhood;
                 }
             });
