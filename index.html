@@ -33,13 +33,15 @@
         // initial basemap
         var map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/jordanmap/cjdc2lcd2cc4k2rnvpqz76yc8',
+            style: 'https://vectormaps.lavamap.com/vector_basemap_20180215/style_20180215.json',
             center: [-73.9576740104957, 40.7274924718489],
             zoom: 14
         });
 
         // set true to turn on tile boundaires for debugging
         // map.showTileBoundaries = true;
+
+        var currentNeighborhood = "";
 
         var nbhdCentroid = {};
         nbhdCentroid.type = "FeatureCollection";
@@ -178,7 +180,7 @@
             // map.getSource('nbhdAllCentroids').setData(nbhdAllCentroids);
             // map.getSource('multiPolygonTest').setData(multiPolygonTest);
             // map.getSource('polygonTest').setData(polygonTest);
-            console.log(nbhdCentroid);
+            // console.log(nbhdCentroid);
             map.getSource('nbhdCentroid').setData(nbhdCentroid);
         };
 
@@ -194,10 +196,26 @@
                 },
                 "source-layer": "nbhd_20180323-c1hqb5",
                 "paint": {
-                    "fill-outline-color": "#000",
                     "fill-color": "transparent"
                 }
             });
+
+            map.addLayer({
+                "id": "nbhd_hover_light",
+                "type": "fill",
+                "source": {
+                    type: 'vector',
+                    url: 'mapbox://jordanmap.8gm91vxf'
+                },
+                "source-layer": "nbhd_20180323-c1hqb5",
+                "paint": {
+                    "fill-color": "#666666",
+                    "fill-outline-color": "#479CFF",
+                    "fill-opacity": .5,
+                },
+                "filter": ["==", "small_neighborhood", ""]
+            });
+
 
             map.addLayer({
                 "id": "nbhd_hover",
@@ -208,8 +226,9 @@
                 },
                 "source-layer": "nbhd_20180323-c1hqb5",
                 "paint": {
-                    "fill-color": "#eee",
-                    "fill-opacity": 0.5
+                    "fill-color": "#666666",
+                    "fill-outline-color": "#479CFF",
+                    "fill-opacity": .7,
                 },
                 "filter": ["==", "small_neighborhood", ""]
             });
@@ -363,7 +382,7 @@
 
             map.on('click', function(e) {
                 var features = map.queryRenderedFeatures(e.point, {
-                    layers: ["nbhd_centroids", "nbhd_label"]
+                    layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
                 });
                 if (features.length) {
                     if (features[0].properties.bounds) {
@@ -381,6 +400,8 @@
                             [features[0].properties.maxLng, features[0].properties.maxLat]
                         ]);
                     }
+                    map.setFilter("nbhd_hover_light", ["!=", "small_neighborhood", features[0].properties.small_neighborhood]);
+                    currentNeighborhood = features[0].properties.small_neighborhood;
                 }
             });
 
@@ -402,12 +423,14 @@
 
             map.on('mousemove', function(e) {
                 var features = map.queryRenderedFeatures(e.point, {
-                    layers: ["nbhd_centroids", "nbhd_label"]
+                    layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
                 });
 
                 if (features.length) {
-                    map.getCanvas().style.cursor = 'pointer';
-                    map.setFilter("nbhd_hover", ["==", "small_neighborhood", features[0].properties.small_neighborhood]);
+                    if (features[0].properties.small_neighborhood != currentNeighborhood) {
+                        map.getCanvas().style.cursor = 'pointer';
+                        map.setFilter("nbhd_hover", ["==", "small_neighborhood", features[0].properties.small_neighborhood]);
+                    }
                 } else {
                     map.getCanvas().style.cursor = '';
                     map.setFilter("nbhd_hover", ["==", "small_neighborhood", ""]);
