@@ -21,6 +21,10 @@
       bottom: 0;
       width: 100%;
     }
+
+    .mapboxgl-control-container {
+      display: none;
+    }
   </style>
 </head>
 
@@ -59,16 +63,6 @@
     var multiPolygonTest = {};
     multiPolygonTest.type = "FeatureCollection";
     multiPolygonTest.features = [];
-
-    var turfFeatures = turf.featureCollection([
-      turf.point([-97.522259, 35.4691]),
-      turf.point([-97.502754, 35.463455]),
-      turf.point([-97.508269, 35.463245])
-    ]);
-
-    var turfCenter = turf.center(turfFeatures);
-    // console.log(turfFeatures);
-    // console.log(turfCenter);
 
     var dynamicLabeling = function() {
       nbhdAllCentroids.features = [];
@@ -179,6 +173,7 @@
 
       // console.log(nbhdCentroid);
       map.setFilter("nbhd_label", labelFilter);
+      map.setFilter("fake_counts", labelFilter);
       // map.getSource('nbhdAllCentroids').setData(nbhdAllCentroids);
       // map.getSource('multiPolygonTest').setData(multiPolygonTest);
       // map.getSource('polygonTest').setData(polygonTest);
@@ -212,7 +207,7 @@
         "source-layer": "nbhd_20180323-c1hqb5",
         "paint": {
           "fill-color": "#666666",
-          "fill-outline-color": "#479CFF",
+          "fill-outline-color": "#fff",
           "fill-opacity": .5,
         },
         "filter": ["==", "small_neighborhood", ""]
@@ -229,7 +224,7 @@
         "source-layer": "nbhd_20180323-c1hqb5",
         "paint": {
           "fill-color": "#666666",
-          "fill-outline-color": "#479CFF",
+          "fill-outline-color": "#fff",
           "fill-opacity": .7,
         },
         "filter": ["==", "small_neighborhood", ""]
@@ -244,41 +239,40 @@
         },
         "source-layer": "nbhd_20180323-c1hqb5",
         "paint": {
-          "line-color": "#479CFF",
-          "line-width": 3
-        },
-        "filter": ["==", "small_neighborhood", ""]
-      });
-
-      map.addSource('polygonTest', {
-        type: 'geojson',
-        data: polygonTest
-      });
-
-      map.addLayer({
-        "id": "polygon_outline",
-        "type": "line",
-        "source": "polygonTest",
-        "paint": {
-          "line-color": "#2a9e24",
-          "line-width": 3
+          "line-color": "#fff",
+          "line-width": 1
         }
       });
 
-      map.addSource('multiPolygonTest', {
-        type: 'geojson',
-        data: multiPolygonTest
-      });
-
-      map.addLayer({
-        "id": "multi_polygon_outline",
-        "type": "line",
-        "source": "multiPolygonTest",
-        "paint": {
-          "line-color": "#c0e024",
-          "line-width": 3
-        }
-      });
+      // map.addSource('polygonTest', {
+      //   type: 'geojson',
+      //   data: polygonTest
+      // });
+      //
+      // map.addLayer({
+      //   "id": "polygon_outline",
+      //   "type": "line",
+      //   "source": "polygonTest",
+      //   "paint": {
+      //     "line-color": "#2a9e24",
+      //     "line-width": 3
+      //   }
+      // });
+      //
+      // map.addSource('multiPolygonTest', {
+      //   type: 'geojson',
+      //   data: multiPolygonTest
+      // });
+      //
+      // map.addLayer({
+      //   "id": "multi_polygon_outline",
+      //   "type": "line",
+      //   "source": "multiPolygonTest",
+      //   "paint": {
+      //     "line-color": "#c0e024",
+      //     "line-width": 3
+      //   }
+      // });
 
       map.addLayer({
         "id": "nbhd_label",
@@ -295,7 +289,7 @@
             "base": 1,
             "stops": [
               [12, 12],
-              [16, 17]
+              [16, 16]
             ]
           },
           "text-padding": 3,
@@ -315,12 +309,12 @@
         type: 'geojson',
         data: nbhdCentroid
       });
-
-      map.addSource('nbhdAllCentroids', {
-        type: 'geojson',
-        data: nbhdAllCentroids
-      });
-
+      //
+      // map.addSource('nbhdAllCentroids', {
+      //   type: 'geojson',
+      //   data: nbhdAllCentroids
+      // });
+      //
       map.addLayer({
         "id": "nbhd_centroids",
         // "type": "circle",
@@ -333,7 +327,7 @@
             "base": 1,
             "stops": [
               [12, 12],
-              [16, 17]
+              [16, 16]
             ]
           },
           "text-padding": 3,
@@ -350,30 +344,86 @@
       });
 
       map.addLayer({
-        "id": "nbhd_all_centroids",
+        "id": "fake_counts_centroids",
         // "type": "circle",
         "type": "symbol",
-        "source": "nbhdAllCentroids",
-        // "paint": {
-        //     "circle-color": "#f00",
-        //     "circle-radius": 5
-        // }
+        "source": "nbhdCentroid",
+        'minzoom': 12,
         "layout": {
-          'text-field': '{small_neighborhood}',
+          'icon-image': 'listingCircle0',
+          'icon-size': 1,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-anchor': "top",
+          'icon-offset': [0, 15],
+          'text-field': "10",
           'text-font': ["Lato Bold"],
-          'text-size': 10,
-          "text-padding": 3,
-          "text-letter-spacing": 0.1,
-          "text-max-width": 7,
-          "text-transform": "uppercase"
+          'text-size': 15,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+          'text-anchor': "top",
+          'text-offset': [-0.09, 1.75]
         },
         "paint": {
-          "text-color": "#333",
-          "text-halo-color": "hsl(0, 0%, 100%)",
-          "text-halo-width": 1.5,
-          "text-halo-blur": 1
+          'text-color': "#fff"
         }
       });
+
+      map.addLayer({
+        "id": "fake_counts",
+        // "type": "circle",
+        "type": "symbol",
+        "source": {
+          type: "vector",
+          url: "mapbox://jordanmap.78891y1q"
+        },
+        "source-layer": "nbhd_label_20180323-73w8yn",
+        'minzoom': 12,
+        "layout": {
+          'icon-image': 'listingCircle0',
+          'icon-size': 1,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-anchor': "top",
+          'icon-offset': [0, 15],
+          'text-field': "10",
+          'text-font': ["Lato Bold"],
+          'text-size': 15,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+          'text-anchor': "top",
+          'text-offset': [-0.09, 1.75]
+        },
+        "paint": {
+          'text-color': "#fff"
+        }
+      });
+
+      // map.addLayer({
+      //   "id": "nbhd_all_centroids",
+      //   // "type": "circle",
+      //   "type": "symbol",
+      //   "source": "nbhdAllCentroids",
+      //   // "paint": {
+      //   //     "circle-color": "#f00",
+      //   //     "circle-radius": 5
+      //   // }
+      //   "layout": {
+      //     'text-field': '{small_neighborhood}',
+      //     'text-font': ["Lato Bold"],
+      //     'text-size': 10,
+      //     "text-padding": 3,
+      //     "text-letter-spacing": 0.1,
+      //     "text-max-width": 7,
+      //     "text-transform": "uppercase"
+      //   },
+      //   "paint": {
+      //     "text-color": "#333",
+      //     "text-halo-color": "hsl(0, 0%, 100%)",
+      //     "text-halo-width": 1.5,
+      //     "text-halo-blur": 1
+      //   }
+      // });
 
       // var tileLoad = setInterval(function() {
       //   if (map.loaded()) {
@@ -384,6 +434,7 @@
 
       map.on('click', function(e) {
         map.setLayoutProperty("nbhd_centroids", "visibility", "visible");
+        map.setLayoutProperty("fake_counts_centroids", "visibility", "visible");
         hideDynamicLabels = false;
         var features = map.queryRenderedFeatures(e.point, {
           layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
@@ -420,8 +471,10 @@
       map.on('movestart', function() {
         if (hideDynamicLabels) {
           map.setLayoutProperty("nbhd_centroids", "visibility", "none");
+          map.setLayoutProperty("fake_counts_centroids", "visibility", "none");
         }
         map.setFilter("nbhd_label", ["has", "small_neighborhood"]);
+        map.setFilter("fake_counts", ["has", "small_neighborhood"]);
       });
 
       // get features every time the map is moved
