@@ -98,7 +98,7 @@
 
             if (dynamicLabelFeatures.length) {
                 _.map(dynamicLabelFeatures, function(obj){
-                    if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat) {
+                    if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat && obj.properties.small_neighborhood != currentNeighborhood) {
                         nbhdCentroid.features.push(obj);
                         delete groupNBHD[obj.properties.small_neighborhood];
                         labelFilter.push(obj.properties.small_neighborhood);
@@ -107,10 +107,10 @@
             }
 
             Object.keys(groupNBHD).forEach(function(e) {
-                var maxLng = _.max(_.unzip(JSON.parse(groupNBHD[e][0].properties.bounds).coordinates[0][0])[0]);
-                var maxLat = _.max(_.unzip(JSON.parse(groupNBHD[e][0].properties.bounds).coordinates[0][0])[1]);
-                var minLng = _.min(_.unzip(JSON.parse(groupNBHD[e][0].properties.bounds).coordinates[0][0])[0]);
-                var minLat = _.min(_.unzip(JSON.parse(groupNBHD[e][0].properties.bounds).coordinates[0][0])[1]);
+                var maxlng = groupNBHD[e][0].properties.maxlng;
+                var maxlat = groupNBHD[e][0].properties.maxlat;
+                var minlng = groupNBHD[e][0].properties.minlng;
+                var minlat = groupNBHD[e][0].properties.minlat;
                 var nbhdCenterOfMassList = [];
                 var lngOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[0];
                 var latOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[1];
@@ -135,10 +135,10 @@
                                 polygonTest.features.push(intersection);
                                 centerOfMass = turf.centerOfMass(intersection);
                                 centerOfMass.properties.small_neighborhood = obj.properties.small_neighborhood;
-                                centerOfMass.properties.minLng = minLng;
-                                centerOfMass.properties.minLat = minLat;
-                                centerOfMass.properties.maxLng = maxLng;
-                                centerOfMass.properties.maxLat = maxLat;
+                                centerOfMass.properties.minlng = minlng;
+                                centerOfMass.properties.minlat = minlat;
+                                centerOfMass.properties.maxlng = maxlng;
+                                centerOfMass.properties.maxlat = maxlat;
                                 // nbhdAllCentroids.features.push(centerOfMass);
                                 nbhdCenterOfMassList.push(centerOfMass);
                             }
@@ -180,10 +180,10 @@
                     };
                     var legitCenter = turf.center(nbhdCenterOfMass);
                     legitCenter.properties.small_neighborhood = nbhdCenterOfMassList[0].properties.small_neighborhood;
-                    legitCenter.properties.minLng = nbhdCenterOfMassList[0].properties.minLng;
-                    legitCenter.properties.minLat = nbhdCenterOfMassList[0].properties.minLat;
-                    legitCenter.properties.maxLng = nbhdCenterOfMassList[0].properties.maxLng;
-                    legitCenter.properties.maxLat = nbhdCenterOfMassList[0].properties.maxLat;
+                    legitCenter.properties.minlng = nbhdCenterOfMassList[0].properties.minlng;
+                    legitCenter.properties.minlat = nbhdCenterOfMassList[0].properties.minlat;
+                    legitCenter.properties.maxlng = nbhdCenterOfMassList[0].properties.maxlng;
+                    legitCenter.properties.maxlat = nbhdCenterOfMassList[0].properties.maxlat;
                     nbhdCentroid.features.push(legitCenter);
                 }
             });
@@ -202,7 +202,7 @@
 
             map.addSource("nbhdSourceData", {
                 type: "vector",
-                url: "mapbox://jordanmap.8gm91vxf"
+                url: "mapbox://jordanmap.6h12tv9x"
             });
 
             // add neighborhood layer
@@ -210,7 +210,7 @@
                 "id": "nbhd",
                 "type": "fill",
                 "source": "nbhdSourceData",
-                "source-layer": "nbhd_20180323-c1hqb5",
+                "source-layer": "nbhd_20180327-dgzidp",
                 "paint": {
                     "fill-color": "transparent"
                 }
@@ -221,9 +221,9 @@
                 "type": "fill",
                 "source": {
                     type: 'vector',
-                    url: 'mapbox://jordanmap.8gm91vxf'
+                    url: 'mapbox://jordanmap.6h12tv9x'
                 },
-                "source-layer": "nbhd_20180323-c1hqb5",
+                "source-layer": "nbhd_20180327-dgzidp",
                 "paint": {
                     "fill-color": "#666666",
                     "fill-outline-color": "#fff",
@@ -238,9 +238,9 @@
                 "type": "fill",
                 "source": {
                     type: 'vector',
-                    url: 'mapbox://jordanmap.8gm91vxf'
+                    url: 'mapbox://jordanmap.6h12tv9x'
                 },
-                "source-layer": "nbhd_20180323-c1hqb5",
+                "source-layer": "nbhd_20180327-dgzidp",
                 "paint": {
                     "fill-color": "#666666",
                     "fill-outline-color": "#fff",
@@ -254,9 +254,9 @@
                 "type": "line",
                 "source": {
                     type: 'vector',
-                    url: 'mapbox://jordanmap.8gm91vxf'
+                    url: 'mapbox://jordanmap.6h12tv9x'
                 },
-                "source-layer": "nbhd_20180323-c1hqb5",
+                "source-layer": "nbhd_20180327-dgzidp",
                 "paint": {
                     "line-color": "#fff",
                     "line-width": 1
@@ -298,9 +298,9 @@
                 "type": "symbol",
                 "source": {
                     type: "vector",
-                    url: "mapbox://jordanmap.78891y1q"
+                    url: "mapbox://jordanmap.byu32psd"
                 },
-                "source-layer": "nbhd_label_20180323-73w8yn",
+                "source-layer": "nbhd_label_20180327-2e9xr0",
                 "layout": {
                     'text-field': '{small_neighborhood}',
                     'text-font': ["Lato Bold"],
@@ -457,21 +457,13 @@
                     layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
                 });
                 if (features.length) {
-                    if (features[0].properties.bounds) {
-                        var maxLng = _.max(_.unzip(JSON.parse(features[0].properties.bounds).coordinates[0][0])[0]);
-                        var maxLat = _.max(_.unzip(JSON.parse(features[0].properties.bounds).coordinates[0][0])[1]);
-                        var minLng = _.min(_.unzip(JSON.parse(features[0].properties.bounds).coordinates[0][0])[0]);
-                        var minLat = _.min(_.unzip(JSON.parse(features[0].properties.bounds).coordinates[0][0])[1]);
-                        map.fitBounds([
-                            [minLng, minLat],
-                            [maxLng, maxLat]
-                        ]);
-                    } else {
-                        map.fitBounds([
-                            [features[0].properties.minLng, features[0].properties.minLat],
-                            [features[0].properties.maxLng, features[0].properties.maxLat]
-                        ]);
-                    }
+                    map.setFilter("nbhd_hover_light", ["!=", "small_neighborhood", features[0].properties.small_neighborhood]);
+                    map.setFilter("nbhd_hover", ["==", "small_neighborhood", ""]);
+                    currentNeighborhood = features[0].properties.small_neighborhood;
+                    map.fitBounds([
+                        [features[0].properties.minlng, features[0].properties.minlat],
+                        [features[0].properties.maxlng, features[0].properties.maxlat]
+                    ]);
                 }
             });
 
