@@ -64,6 +64,8 @@
         multiPolygonTest.type = "FeatureCollection";
         multiPolygonTest.features = [];
 
+        var dynamicLabels = [];
+
         var dynamicLabeling = function() {
             nbhdAllCentroids.features = [];
             nbhdCentroid.features = [];
@@ -88,7 +90,21 @@
                 return obj.properties.small_neighborhood;
             });
 
-            var labelFilter = ["in", "small_neighborhood"];
+            var dynamicLabelFeatures = map.queryRenderedFeatures({
+                layers: ["nbhd_centroids"]
+            });
+
+            var labelFilter = ["!in", "small_neighborhood"];
+
+            if (dynamicLabelFeatures.length) {
+                _.map(dynamicLabelFeatures, function(obj){
+                    if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat) {
+                        nbhdCentroid.features.push(obj);
+                        delete groupNBHD[obj.properties.small_neighborhood];
+                        labelFilter.push(obj.properties.small_neighborhood);
+                    }
+                });
+            }
 
             Object.keys(groupNBHD).forEach(function(e) {
                 var maxLng = _.max(_.unzip(JSON.parse(groupNBHD[e][0].properties.bounds).coordinates[0][0])[0]);
@@ -99,9 +115,10 @@
                 var lngOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[0];
                 var latOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[1];
                 if (lngOfCentroid > sw.lng && lngOfCentroid < ne.lng && latOfCentroid > sw.lat && latOfCentroid < ne.lat) {
-                    labelFilter.push(groupNBHD[e][0].properties.small_neighborhood);
+
                 } else {
                     // console.log(e);
+                    labelFilter.push(e);
                     _.map(groupNBHD[e], function(obj) {
                         // console.log(obj.geometry.coordinates[0]);
                         // console.log(obj.geometry.coordinates[0].length);
