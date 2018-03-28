@@ -15,7 +15,6 @@ var map = new mapboxgl.Map({
 
 var currentNeighborhood = "";
 var hideDynamicLabels = false;
-var dynamic = false;
 
 var nbhdCentroid = {};
 nbhdCentroid.type = "FeatureCollection";
@@ -61,21 +60,21 @@ var dynamicLabeling = function() {
         return obj.properties.small_neighborhood;
     });
 
-    var dynamicLabelFeatures = map.queryRenderedFeatures({
-        layers: ["nbhd_centroids"]
-    });
+    // var dynamicLabelFeatures = map.queryRenderedFeatures({
+    //     layers: ["nbhd_centroids"]
+    // });
 
     var labelFilter = ["!in", "small_neighborhood"];
 
-    if (dynamicLabelFeatures.length) {
-        _.map(dynamicLabelFeatures, function(obj){
-            if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat && obj.properties.small_neighborhood != currentNeighborhood) {
-                nbhdCentroid.features.push(obj);
-                delete groupNBHD[obj.properties.small_neighborhood];
-                labelFilter.push(obj.properties.small_neighborhood);
-            }
-        });
-    }
+    // if (dynamicLabelFeatures.length) {
+    //     _.map(dynamicLabelFeatures, function(obj){
+    //         if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat && obj.properties.small_neighborhood != currentNeighborhood) {
+    //             nbhdCentroid.features.push(obj);
+    //             delete groupNBHD[obj.properties.small_neighborhood];
+    //             labelFilter.push(obj.properties.small_neighborhood);
+    //         }
+    //     });
+    // }
 
     Object.keys(groupNBHD).forEach(function(e) {
         var maxlng = groupNBHD[e][0].properties.maxlng;
@@ -424,7 +423,6 @@ map.on('load', function() {
     // }, 300);
 
     map.on('click', function(e) {
-        dynamic = true;
         var features = map.queryRenderedFeatures(e.point, {
             layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
         });
@@ -437,19 +435,25 @@ map.on('load', function() {
                 [features[0].properties.maxlng, features[0].properties.maxlat]
             ]);
         }
+        var tileLoad = setInterval(function() {
+            if (map.loaded()) {
+                dynamicLabeling();
+                clearInterval(tileLoad);
+            }
+        }, 300);
     });
 
     // get features every time the map is moved
-    map.on('moveend', function() {
-        if (dynamic) {
-            var tileLoad = setInterval(function() {
-                if (map.loaded()) {
-                    dynamicLabeling();
-                    clearInterval(tileLoad);
-                }
-            }, 300);
-        }
-    });
+    // map.on('moveend', function() {
+    //     if (dynamic) {
+    //         var tileLoad = setInterval(function() {
+    //             if (map.loaded()) {
+    //                 dynamicLabeling();
+    //                 clearInterval(tileLoad);
+    //             }
+    //         }, 300);
+    //     }
+    // });
 
     map.on('mousemove', function(e) {
         var features = map.queryRenderedFeatures(e.point, {
