@@ -1,9 +1,7 @@
-/*jshint esversion: 6 */
-
 mapboxgl.accessToken = 'pk.eyJ1Ijoiam9yZGFubWFwIiwiYSI6IjRUOVBuV28ifQ.ubu4SCJhADfVRbncXCXiPg';
 
 // initial basemap
-const map = new mapboxgl.Map({
+var map = new mapboxgl.Map({
     container: 'map',
     // style: 'https://vectormaps.lavamap.com/vector_basemap_20180215/style_20180215.json',
     style: 'mapbox://styles/jordanmap/cjajsy6x7b46k2rpatcsm0mu1',
@@ -248,14 +246,30 @@ map.on('load', function() {
 
 function dyLabels(map) {
     nbhdCentroid.features = [];
-    let nbhdFeatures = map.queryRenderedFeatures({
+    var nbhdFeatures = map.queryRenderedFeatures({
         layers: ["nbhd"]
     });
 
-    let mapSW = map.getBounds()._sw;
-    let mapNE = map.getBounds()._ne;
+    var mapSW = map.getBounds()._sw;
+    var mapNE = map.getBounds()._ne;
 
-    let centroidsList = [];
+    var mapViewBound = {
+        type: "Feature",
+        geometry: {
+            type: "Polygon",
+            coordinates: [
+                [
+                    [mapSW.lng, mapSW.lat],
+                    [mapSW.lng, mapNE.lat],
+                    [mapNE.lng, mapNE.lat],
+                    [mapNE.lng, mapSW.lat],
+                    [mapSW.lng, mapSW.lat]
+                ]
+            ]
+        }
+    };
+
+    let visualCenterList = [];
 
     let fixedLabelFilter = ["!in", "small_neighborhood"];
 
@@ -267,37 +281,45 @@ function dyLabels(map) {
             fixedLabelFilter.push(key);
             // console.log(key);
             // console.log(key,value);
-            let polyInMap = value.map(obj => getPolyInMap(obj, mapSW, mapNE));
-            // console.log(intersections.clean());
-            // let centerOfMass = intersections.clean().map(obj => getCenterOfMass(obj));
-            // // console.log(centerOfMass.clean());
-            // if (centerOfMass.clean().length) {
-            //     let centerFeatures = {
-            //         type: "FeatureCollection",
-            //         features: centerOfMass.clean()
-            //     };
-            //     let centerOfCentroids = center(centerFeatures);
-            //     centerOfCentroids.properties.small_neighborhood = key;
-            //     centerOfCentroids.properties.maxlng = value[0].properties.maxlng;
-            //     centerOfCentroids.properties.maxlat = value[0].properties.maxlat;
-            //     centerOfCentroids.properties.minlng = value[0].properties.minlng;
-            //     centerOfCentroids.properties.minlat = value[0].properties.minlat;
-            //     // console.log(center);
-            //     nbhdCentroid.features.push(centerOfCentroids);
-            // }
+            let visualCenter = value.map(obj => getVisualCenter(obj, mapViewBound));
+            if (visualCenter.clean().length) {
+                visualCenterList.push(visualCenter.clean());
+            }
         }
+    });
+    visualCenterList.map(obj => {
+        let coordinatesList = [];
+        obj.forEach(function(feature){
+            coordinatesList.push(feature.geometry.coordinates);
+        });
+        let center = getCenter(coordinatesList);
+        let neighborhoodCenterFeature = {
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: center
+            },
+            properties: {
+                small_neighborhood: obj[0].properties.small_neighborhood,
+                minlng: obj[0].properties.minlng,
+                minlat: obj[0].properties.minlat,
+                maxlng: obj[0].properties.maxlng,
+                maxlat: obj[0].propertiesmaxlat
+            }
+        };
+        nbhdCentroid.features.push(neighborhoodCenterFeature);
     });
     map.setFilter("nbhd_label", fixedLabelFilter);
     map.setFilter("fake_counts", fixedLabelFilter);
     map.getSource('nbhdCentroid').setData(nbhdCentroid);
 }
-
+//
 // groupBy function
 function groupBy(list, keyGetter) {
-    const map = new Map();
-    list.forEach((item) => {
-        const key = keyGetter(item);
-        const collection = map.get(key);
+    var map = new Map();
+    list.forEach(function(item) {
+        var key = keyGetter(item);
+        var collection = map.get(key);
         if (!collection) {
             map.set(key, [item]);
         } else {
@@ -307,59 +329,49 @@ function groupBy(list, keyGetter) {
     return map;
 }
 
-// get intersection
-function getPolyInMap(feature, sw, ne) {
-    console.log(feature);
+// get visual center
+function getVisualCenter(feature, mapViewBound) {
     if (feature.geometry.type == "Polygon") {
-        for (var i = 0; i < feature.geometry.coordinates[0].length; i++) {
-            let lng = feature.geometry.coordinates[0][i][0];
-            let lat = feature.geometry.coordinates[0][i][1];
-            if (lng <= sw.lng || lng >= ne.lng || lat <= sw.lat || lat >= ne.lat) {
-                feature.geometry.coordinates[0].splice(i,1);
+        let intersection = turf.intersect(mapViewBound, feature.geometry);
+        if (intersection) {
+            let visualCenter = {
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: []
+                },
+                properties: {}
+            };
+            if(intersection.geometry.coordinates.length > 1) {
+                let intersections = [];
+                intersection.geometry.coordinates.forEach(function(coordinate){
+                    intersections.push(polylabel(coordinate));
+                });
+                visualCenter.geometry.coordinates = getCenter(intersections);
+            } else {
+                visualCenter.geometry.coordinates = polylabel(intersection.geometry.coordinates);
             }
-            feature.geometry.coordinates[0].push(feature.geometry.coordinates[0][feature.geometry.coordinates[0].length - 1]);
+            visualCenter.properties.small_neighborhood = feature.properties.small_neighborhood;
+            visualCenter.properties.minlng = feature.properties.minlng;
+            visualCenter.properties.minlat = feature.properties.minlat;
+            visualCenter.properties.maxlng = feature.properties.maxlng;
+            visualCenter.properties.maxlat = feature.propertiesmaxlat;
+            return visualCenter;
         }
-        // console.log(feature.geometry.coordinates[0]);
-    } else if (feature.geometry.type == "MultiPolygon") {
-
     }
 }
 
-// get center of mass
-function getCenterOfMass(feature) {
-    if (feature.geometry.type == "Polygon") {
-        let polyCentroid = centerOfMass(feature);
-        return polyCentroid;
-    } else if (feature.geometry.type == "MultiPolygon") {
-        let polyCentroids = {
-            type: "FeatureCollection",
-            features: []
-        };
-        feature.geometry.coordinates.forEach(function(coord){
-            // let poly = polygon(coord);
-            // let mapViewBound = {
-            //     type: "Feature",
-            //     geometry: {
-            //         type: "Polygon",
-            //         coordinates: [
-            //             [
-            //                 [mapSW.lng, mapSW.lat],
-            //                 [mapSW.lng, mapNE.lat],
-            //                 [mapNE.lng, mapNE.lat],
-            //                 [mapNE.lng, mapSW.lat],
-            //                 [mapSW.lng, mapSW.lat]
-            //             ]
-            //         ]
-            //     }
-            // };
-            let polyCentroid = centerOfMass(poly);
-            polyCentroids.features.push(polyCentroid);
-        });
-        let multiPolyCentroid = center(polyCentroids);
-        return multiPolyCentroid;
-    } else {
-        return;
-    }
+// get the center of a coordinates list
+function getCenter(coordinates) {
+    let lngList = [];
+    let latList = [];
+    coordinates.map(coordinate => {
+        lngList.push(coordinate[0]);
+        latList.push(coordinate[1]);
+    });
+    let meanLng = lngList.reduce((p,c) => p + c, 0) / lngList.length;
+    let meanLat = latList.reduce((p,c) => p + c, 0) / latList.length;
+    return [meanLng, meanLat];
 }
 
 // remove undefined from an array
