@@ -34,6 +34,8 @@ multiPolygonTest.features = [];
 
 var dynamicLabels = [];
 
+dyLabels(map);
+
 var dynamicLabeling = function() {
     nbhdAllCentroids.features = [];
     nbhdCentroid.features = [];
@@ -471,18 +473,3 @@ map.on('load', function() {
         }
     });
 });
-
-// groupBy function
-function groupBy(list, keyGetter) {
-    const map = new Map();
-    list.forEach((item) => {
-        const key = keyGetter(item);
-        const collection = map.get(key);
-        if (!collection) {
-            map.set(key, [item]);
-        } else {
-            collection.push(item);
-        }
-    });
-    return map;
-}
