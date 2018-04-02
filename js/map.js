@@ -1,11 +1,10 @@
-/*jshint esversion: 6 */
-
 mapboxgl.accessToken = 'pk.eyJ1Ijoiam9yZGFubWFwIiwiYSI6IjRUOVBuV28ifQ.ubu4SCJhADfVRbncXCXiPg';
 
 // initial basemap
 var map = new mapboxgl.Map({
     container: 'map',
-    style: 'https://vectormaps.lavamap.com/vector_basemap_20180215/style_20180215.json',
+    // style: 'https://vectormaps.lavamap.com/vector_basemap_20180215/style_20180215.json',
+    style: 'mapbox://styles/jordanmap/cjajsy6x7b46k2rpatcsm0mu1',
     center: [-73.9576740104957, 40.7274924718489],
     zoom: 14
 });
@@ -19,156 +18,6 @@ var hideDynamicLabels = false;
 var nbhdCentroid = {};
 nbhdCentroid.type = "FeatureCollection";
 nbhdCentroid.features = [];
-
-var nbhdAllCentroids = {};
-nbhdAllCentroids.type = "FeatureCollection";
-nbhdAllCentroids.features = [];
-
-var polygonTest = {};
-polygonTest.type = "FeatureCollection";
-polygonTest.features = [];
-
-var multiPolygonTest = {};
-multiPolygonTest.type = "FeatureCollection";
-multiPolygonTest.features = [];
-
-var dynamicLabels = [];
-
-dyLabels(map);
-
-var dynamicLabeling = function() {
-    nbhdAllCentroids.features = [];
-    nbhdCentroid.features = [];
-    polygonTest.features = [];
-    var mapBounds = map.getBounds();
-    var sw = map.getBounds()._sw;
-    var ne = map.getBounds()._ne;
-    var mapViewBound = turf.polygon([
-        [
-            [sw.lng, sw.lat],
-            [sw.lng, ne.lat],
-            [ne.lng, ne.lat],
-            [ne.lng, sw.lat],
-            [sw.lng, sw.lat]
-        ]
-    ]);
-
-    var nbhdFeatures = map.queryRenderedFeatures({
-        layers: ["nbhd"]
-    });
-
-
-    var groupNBHD = _.groupBy(nbhdFeatures, function(obj) {
-        return obj.properties.small_neighborhood;
-    });
-
-    // var dynamicLabelFeatures = map.queryRenderedFeatures({
-    //     layers: ["nbhd_centroids"]
-    // });
-
-    var labelFilter = ["!in", "small_neighborhood"];
-
-    // if (dynamicLabelFeatures.length) {
-    //     _.map(dynamicLabelFeatures, function(obj){
-    //         if (obj.geometry.coordinates[0] > sw.lng && obj.geometry.coordinates[0] < ne.lng && obj.geometry.coordinates[1] > sw.lat && obj.geometry.coordinates[1] < ne.lat && obj.properties.small_neighborhood != currentNeighborhood) {
-    //             nbhdCentroid.features.push(obj);
-    //             delete groupNBHD[obj.properties.small_neighborhood];
-    //             labelFilter.push(obj.properties.small_neighborhood);
-    //         }
-    //     });
-    // }
-
-    Object.keys(groupNBHD).forEach(function(e) {
-        var maxlng = groupNBHD[e][0].properties.maxlng;
-        var maxlat = groupNBHD[e][0].properties.maxlat;
-        var minlng = groupNBHD[e][0].properties.minlng;
-        var minlat = groupNBHD[e][0].properties.minlat;
-        var nbhdCenterOfMassList = [];
-        var lngOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[0];
-        var latOfCentroid = JSON.parse(groupNBHD[e][0].properties.centroid).coordinates[1];
-        if (lngOfCentroid > sw.lng && lngOfCentroid < ne.lng && latOfCentroid > sw.lat && latOfCentroid < ne.lat) {
-
-        } else {
-            // console.log(e);
-            labelFilter.push(e);
-            _.map(groupNBHD[e], function(obj) {
-                // console.log(obj.geometry.coordinates[0]);
-                // console.log(obj.geometry.coordinates[0].length);
-                // console.log(obj.properties.small_neighborhood);
-                // console.log(obj.geometry.type);
-                var intersection;
-                var centroid;
-                var centerOfMass;
-                if (obj.geometry.type == "Polygon") {
-                    intersection = turf.intersect(mapViewBound, obj.geometry);
-                    // console.log(intersection);
-                    // centroid = turf.centroid(intersection.geometry);
-                    if (intersection) {
-                        polygonTest.features.push(intersection);
-                        centerOfMass = turf.centerOfMass(intersection);
-                        centerOfMass.properties.small_neighborhood = obj.properties.small_neighborhood;
-                        centerOfMass.properties.minlng = minlng;
-                        centerOfMass.properties.minlat = minlat;
-                        centerOfMass.properties.maxlng = maxlng;
-                        centerOfMass.properties.maxlat = maxlat;
-                        // nbhdAllCentroids.features.push(centerOfMass);
-                        nbhdCenterOfMassList.push(centerOfMass);
-                    }
-                }
-                // else {
-                //     obj.geometry.coordinates.forEach(function(coords) {
-                //         var feat = {
-                //             'type': 'Polygon',
-                //             'coordinates': coords
-                //         };
-                //         intersection = turf.intersect(mapViewBound, feat);
-                //         if (intersection) {
-                //             multiPolygonTest.features.push(intersection);
-                //             centerOfMass = turf.centerOfMass(intersection);
-                //             centerOfMass.properties.name = obj.properties.small_neighborhood;
-                //             nbhdAllCentroids.features.push(centerOfMass);
-                //         }
-                //     });
-                // }
-            });
-
-
-            // var centroidsFeatureCollection = {};
-            // centroidsFeatureCollection.type = "FeatureCollection";
-            // centroidsFeatureCollection.features = centroids;
-            //
-            // var center = turf.center(centroidsFeatureCollection);
-            // center.properties.name = nbhdName;
-            // center.properties.minLng = minLng;
-            // center.properties.minLat = minLat;
-            // center.properties.maxLng = maxLng;
-            // center.properties.maxLat = maxLat;
-            // nbhdCentroid.features.push(center);
-        }
-        if (nbhdCenterOfMassList.length) {
-            var nbhdCenterOfMass = {
-                type: "FeatureCollection",
-                features: nbhdCenterOfMassList
-            };
-            var legitCenter = turf.center(nbhdCenterOfMass);
-            legitCenter.properties.small_neighborhood = nbhdCenterOfMassList[0].properties.small_neighborhood;
-            legitCenter.properties.minlng = nbhdCenterOfMassList[0].properties.minlng;
-            legitCenter.properties.minlat = nbhdCenterOfMassList[0].properties.minlat;
-            legitCenter.properties.maxlng = nbhdCenterOfMassList[0].properties.maxlng;
-            legitCenter.properties.maxlat = nbhdCenterOfMassList[0].properties.maxlat;
-            nbhdCentroid.features.push(legitCenter);
-        }
-    });
-
-    // console.log(nbhdCentroid);
-    map.setFilter("nbhd_label", labelFilter);
-    map.setFilter("fake_counts", labelFilter);
-    // map.getSource('nbhdAllCentroids').setData(nbhdAllCentroids);
-    // map.getSource('multiPolygonTest').setData(multiPolygonTest);
-    // map.getSource('polygonTest').setData(polygonTest);
-    // console.log(nbhdCentroid);
-    map.getSource('nbhdCentroid').setData(nbhdCentroid);
-};
 
 map.on('load', function() {
 
@@ -235,36 +84,6 @@ map.on('load', function() {
         }
     });
 
-    // map.addSource('polygonTest', {
-    //   type: 'geojson',
-    //   data: polygonTest
-    // });
-    //
-    // map.addLayer({
-    //   "id": "polygon_outline",
-    //   "type": "line",
-    //   "source": "polygonTest",
-    //   "paint": {
-    //     "line-color": "#2a9e24",
-    //     "line-width": 3
-    //   }
-    // });
-    //
-    // map.addSource('multiPolygonTest', {
-    //   type: 'geojson',
-    //   data: multiPolygonTest
-    // });
-    //
-    // map.addLayer({
-    //   "id": "multi_polygon_outline",
-    //   "type": "line",
-    //   "source": "multiPolygonTest",
-    //   "paint": {
-    //     "line-color": "#c0e024",
-    //     "line-width": 3
-    //   }
-    // });
-
     map.addLayer({
         "id": "nbhd_label",
         "type": "symbol",
@@ -300,12 +119,7 @@ map.on('load', function() {
         type: 'geojson',
         data: nbhdCentroid
     });
-    //
-    // map.addSource('nbhdAllCentroids', {
-    //   type: 'geojson',
-    //   data: nbhdAllCentroids
-    // });
-    //
+
     map.addLayer({
         "id": "nbhd_centroids",
         // "type": "circle",
@@ -367,9 +181,9 @@ map.on('load', function() {
         "type": "symbol",
         "source": {
             type: "vector",
-            url: "mapbox://jordanmap.78891y1q"
+            url: "mapbox://jordanmap.byu32psd"
         },
-        "source-layer": "nbhd_label_20180323-73w8yn",
+        "source-layer": "nbhd_label_20180327-2e9xr0",
         'minzoom': 12,
         "layout": {
             'icon-image': 'listingCircle0',
@@ -391,39 +205,6 @@ map.on('load', function() {
         }
     });
 
-    // map.addLayer({
-    //   "id": "nbhd_all_centroids",
-    //   // "type": "circle",
-    //   "type": "symbol",
-    //   "source": "nbhdAllCentroids",
-    //   // "paint": {
-    //   //     "circle-color": "#f00",
-    //   //     "circle-radius": 5
-    //   // }
-    //   "layout": {
-    //     'text-field': '{small_neighborhood}',
-    //     'text-font': ["Lato Bold"],
-    //     'text-size': 10,
-    //     "text-padding": 3,
-    //     "text-letter-spacing": 0.1,
-    //     "text-max-width": 7,
-    //     "text-transform": "uppercase"
-    //   },
-    //   "paint": {
-    //     "text-color": "#333",
-    //     "text-halo-color": "hsl(0, 0%, 100%)",
-    //     "text-halo-width": 1.5,
-    //     "text-halo-blur": 1
-    //   }
-    // });
-
-    // var tileLoad = setInterval(function() {
-    //   if (map.loaded()) {
-    //     dynamicLabeling();
-    //     clearInterval(tileLoad)
-    //   }
-    // }, 300);
-
     map.on('click', function(e) {
         var features = map.queryRenderedFeatures(e.point, {
             layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
@@ -439,23 +220,12 @@ map.on('load', function() {
         }
         var tileLoad = setInterval(function() {
             if (map.loaded()) {
-                dynamicLabeling();
+                // console.log("Start the dynamic labeling function");
+                dyLabels(map);
                 clearInterval(tileLoad);
             }
         }, 300);
     });
-
-    // get features every time the map is moved
-    // map.on('moveend', function() {
-    //     if (dynamic) {
-    //         var tileLoad = setInterval(function() {
-    //             if (map.loaded()) {
-    //                 dynamicLabeling();
-    //                 clearInterval(tileLoad);
-    //             }
-    //         }, 300);
-    //     }
-    // });
 
     map.on('mousemove', function(e) {
         var features = map.queryRenderedFeatures(e.point, {
@@ -473,3 +243,144 @@ map.on('load', function() {
         }
     });
 });
+
+function dyLabels(map) {
+    nbhdCentroid.features = [];
+    var nbhdFeatures = map.queryRenderedFeatures({
+        layers: ["nbhd"]
+    });
+
+    var mapSW = map.getBounds()._sw;
+    var mapNE = map.getBounds()._ne;
+
+    var mapViewBound = {
+        type: "Feature",
+        geometry: {
+            type: "Polygon",
+            coordinates: [
+                [
+                    [mapSW.lng, mapSW.lat],
+                    [mapSW.lng, mapNE.lat],
+                    [mapNE.lng, mapNE.lat],
+                    [mapNE.lng, mapSW.lat],
+                    [mapSW.lng, mapSW.lat]
+                ]
+            ]
+        }
+    };
+
+    var visualCenterList = [];
+
+    var fixedLabelFilter = ["!in", "small_neighborhood"];
+
+    var neighborhoods = groupBy(nbhdFeatures, nbhdFeature => nbhdFeature.properties.small_neighborhood);
+    neighborhoods.forEach(function(value, key) {
+        var lngOfCentroid = JSON.parse(value[0].properties.centroid).coordinates[0];
+        var latOfCentroid = JSON.parse(value[0].properties.centroid).coordinates[1];
+        if (lngOfCentroid <= mapSW.lng || lngOfCentroid >= mapNE.lng || latOfCentroid <= mapSW.lat || latOfCentroid >= mapNE.lat) {
+            fixedLabelFilter.push(key);
+            // console.log(key);
+            // console.log(key,value);
+            var visualCenter = value.map(obj => getVisualCenter(obj, mapViewBound));
+            if (visualCenter.clean().length) {
+                visualCenterList.push(visualCenter.clean());
+            }
+        }
+    });
+    visualCenterList.map(obj => {
+        var coordinatesList = [];
+        obj.forEach(function(feature){
+            coordinatesList.push(feature.geometry.coordinates);
+        });
+        var center = getCenter(coordinatesList);
+        var neighborhoodCenterFeature = {
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: center
+            },
+            properties: {
+                small_neighborhood: obj[0].properties.small_neighborhood,
+                minlng: obj[0].properties.minlng,
+                minlat: obj[0].properties.minlat,
+                maxlng: obj[0].properties.maxlng,
+                maxlat: obj[0].propertiesmaxlat
+            }
+        };
+        nbhdCentroid.features.push(neighborhoodCenterFeature);
+    });
+    map.setFilter("nbhd_label", fixedLabelFilter);
+    map.setFilter("fake_counts", fixedLabelFilter);
+    map.getSource('nbhdCentroid').setData(nbhdCentroid);
+}
+//
+// groupBy function
+function groupBy(list, keyGetter) {
+    var map = new Map();
+    list.forEach(function(item) {
+        var key = keyGetter(item);
+        var collection = map.get(key);
+        if (!collection) {
+            map.set(key, [item]);
+        } else {
+            collection.push(item);
+        }
+    });
+    return map;
+}
+
+// get visual center
+function getVisualCenter(feature, mapViewBound) {
+    if (feature.geometry.type == "Polygon") {
+        var intersection = turf.intersect(mapViewBound, feature.geometry);
+        if (intersection) {
+            var visualCenter = {
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: []
+                },
+                properties: {}
+            };
+            if(intersection.geometry.coordinates.length > 1) {
+                var intersections = [];
+                intersection.geometry.coordinates.forEach(function(coordinate){
+                    intersections.push(polylabel(coordinate));
+                });
+                visualCenter.geometry.coordinates = getCenter(intersections);
+            } else {
+                visualCenter.geometry.coordinates = polylabel(intersection.geometry.coordinates);
+            }
+            visualCenter.properties.small_neighborhood = feature.properties.small_neighborhood;
+            visualCenter.properties.minlng = feature.properties.minlng;
+            visualCenter.properties.minlat = feature.properties.minlat;
+            visualCenter.properties.maxlng = feature.properties.maxlng;
+            visualCenter.properties.maxlat = feature.propertiesmaxlat;
+            return visualCenter;
+        }
+    }
+}
+
+// get the center of a coordinates list
+function getCenter(coordinates) {
+    var lngList = [];
+    var latList = [];
+    coordinates.map(coordinate => {
+        lngList.push(coordinate[0]);
+        latList.push(coordinate[1]);
+    });
+    var meanLng = lngList.reduce((p,c) => p + c, 0) / lngList.length;
+    var meanLat = latList.reduce((p,c) => p + c, 0) / latList.length;
+    return [meanLng, meanLat];
+}
+
+// remove undefined from an array
+Array.prototype.clean = function() {
+  for (var i = 0; i < this.length; i++) {
+    if (!this[i]) {
+      this.splice(i, 1);
+      i--;
+    }
+  }
+  return this;
+};
