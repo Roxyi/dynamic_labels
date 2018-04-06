@@ -3,17 +3,13 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoiam9yZGFubWFwIiwiYSI6IjRUOVBuV28ifQ.ubu4SCJhAD
 // initial basemap
 var map = new mapboxgl.Map({
     container: 'map',
-    // style: 'https://vectormaps.lavamap.com/vector_basemap_20180215/style_20180215.json',
-    style: 'mapbox://styles/jordanmap/cjajsy6x7b46k2rpatcsm0mu1',
+    style: 'mapbox://styles/jordanmap/cjfndkntp1v4w2spazxnvdbxm',
     center: [-73.9576740104957, 40.7274924718489],
     zoom: 14
 });
 
 // set true to turn on tile boundaires for debugging
 // map.showTileBoundaries = true;
-
-var currentNeighborhood = "";
-var hideDynamicLabels = false;
 
 var nbhdCentroid = {};
 nbhdCentroid.type = "FeatureCollection";
@@ -38,49 +34,13 @@ map.on('load', function() {
     });
 
     map.addLayer({
-        "id": "nbhd_hover_light",
-        "type": "fill",
-        "source": {
-            type: 'vector',
-            url: 'mapbox://jordanmap.6h12tv9x'
-        },
-        "source-layer": "nbhd_20180327-dgzidp",
-        "paint": {
-            "fill-color": "#666666",
-            "fill-outline-color": "#fff",
-            "fill-opacity": 0.5
-        },
-        "filter": ["==", "small_neighborhood", ""]
-    });
-
-
-    map.addLayer({
-        "id": "nbhd_hover",
-        "type": "fill",
-        "source": {
-            type: 'vector',
-            url: 'mapbox://jordanmap.6h12tv9x'
-        },
-        "source-layer": "nbhd_20180327-dgzidp",
-        "paint": {
-            "fill-color": "#666666",
-            "fill-outline-color": "#fff",
-            "fill-opacity": 0.7
-        },
-        "filter": ["==", "small_neighborhood", ""]
-    });
-
-    map.addLayer({
         "id": "nbhd_outline",
         "type": "line",
-        "source": {
-            type: 'vector',
-            url: 'mapbox://jordanmap.6h12tv9x'
-        },
+        "source": "nbhdSourceData",
         "source-layer": "nbhd_20180327-dgzidp",
         "paint": {
-            "line-color": "#fff",
-            "line-width": 1
+            "line-color": "#000",
+            "line-width": 3
         }
     });
 
@@ -122,7 +82,6 @@ map.on('load', function() {
 
     map.addLayer({
         "id": "nbhd_centroids",
-        // "type": "circle",
         "type": "symbol",
         "source": "nbhdCentroid",
         "layout": {
@@ -149,98 +108,13 @@ map.on('load', function() {
         }
     });
 
-    map.addLayer({
-        "id": "fake_counts_centroids",
-        // "type": "circle",
-        "type": "symbol",
-        "source": "nbhdCentroid",
-        'minzoom': 12,
-        "layout": {
-            'icon-image': 'listingCircle0',
-            'icon-size': 1,
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-anchor': "top",
-            'icon-offset': [0, 15],
-            'text-field': "10",
-            'text-font': ["Lato Bold"],
-            'text-size': 15,
-            'text-allow-overlap': true,
-            'text-ignore-placement': true,
-            'text-anchor': "top",
-            'text-offset': [-0.09, 1.75]
-        },
-        "paint": {
-            'text-color': "#fff"
-        }
-    });
-
-    map.addLayer({
-        "id": "fake_counts",
-        // "type": "circle",
-        "type": "symbol",
-        "source": {
-            type: "vector",
-            url: "mapbox://jordanmap.byu32psd"
-        },
-        "source-layer": "nbhd_label_20180327-2e9xr0",
-        'minzoom': 12,
-        "layout": {
-            'icon-image': 'listingCircle0',
-            'icon-size': 1,
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-anchor': "top",
-            'icon-offset': [0, 15],
-            'text-field': "10",
-            'text-font': ["Lato Bold"],
-            'text-size': 15,
-            'text-allow-overlap': true,
-            'text-ignore-placement': true,
-            'text-anchor': "top",
-            'text-offset': [-0.09, 1.75]
-        },
-        "paint": {
-            'text-color': "#fff"
-        }
-    });
-
-    map.on('click', function(e) {
-        var features = map.queryRenderedFeatures(e.point, {
-            layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
-        });
-        if (features.length) {
-            map.setFilter("nbhd_hover_light", ["!=", "small_neighborhood", features[0].properties.small_neighborhood]);
-            map.setFilter("nbhd_hover", ["==", "small_neighborhood", ""]);
-            currentNeighborhood = features[0].properties.small_neighborhood;
-            map.fitBounds([
-                [features[0].properties.minlng, features[0].properties.minlat],
-                [features[0].properties.maxlng, features[0].properties.maxlat]
-            ]);
-        }
-        var tileLoad = setInterval(function() {
-            if (map.loaded()) {
-                // console.log("Start the dynamic labeling function");
-                dyLabels(map);
-                clearInterval(tileLoad);
-            }
-        }, 300);
-    });
-
-    map.on('mousemove', function(e) {
-        var features = map.queryRenderedFeatures(e.point, {
-            layers: ["nbhd_centroids", "nbhd_label", "nbhd"]
-        });
-
-        if (features.length) {
-            if (features[0].properties.small_neighborhood != currentNeighborhood) {
-                map.getCanvas().style.cursor = 'pointer';
-                map.setFilter("nbhd_hover", ["==", "small_neighborhood", features[0].properties.small_neighborhood]);
-            }
-        } else {
-            map.getCanvas().style.cursor = '';
-            map.setFilter("nbhd_hover", ["==", "small_neighborhood", ""]);
-        }
+    map.on('moveend', function(e) {
+      var tileLoad = setInterval(function() {
+          if (map.loaded()) {
+              dyLabels(map);
+              clearInterval(tileLoad);
+          }
+      }, 300);
     });
 });
 
@@ -310,7 +184,6 @@ function dyLabels(map) {
         nbhdCentroid.features.push(neighborhoodCenterFeature);
     });
     map.setFilter("nbhd_label", fixedLabelFilter);
-    map.setFilter("fake_counts", fixedLabelFilter);
     map.getSource('nbhdCentroid').setData(nbhdCentroid);
 }
 //
