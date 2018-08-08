@@ -228,7 +228,7 @@ function getVisualCenter(feature, mapViewBound) {
             visualCenter.properties.minlng = feature.properties.minlng;
             visualCenter.properties.minlat = feature.properties.minlat;
             visualCenter.properties.maxlng = feature.properties.maxlng;
-            visualCenter.properties.maxlat = feature.propertiesmaxlat;
+            visualCenter.properties.maxlat = feature.properties.maxlat;
             return visualCenter;
         }
     }
